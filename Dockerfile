@@ -11,10 +11,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     websockify \
     supervisor \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Ensure the node user can write to required directories
-RUN mkdir -p /home/node/.config/chromium /var/log /var/run \
+RUN mkdir -p /home/node/.config/chromium \
     && chown -R node:node /home/node/.config/chromium
 
 # Environment
