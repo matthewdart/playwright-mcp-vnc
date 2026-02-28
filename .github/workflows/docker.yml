@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build:
     uses: matthewdart/toolbox/.github/workflows/build-arm-image.yml@main
@@ -18,5 +22,5 @@ jobs:
     with:
       service_name: playwright-mcp-vnc
       up: true
-      health_port: 0  # no /health endpoint (yet)
+      # health_port: 0 (default — no HTTP endpoint to poll)
     secrets: inherit
