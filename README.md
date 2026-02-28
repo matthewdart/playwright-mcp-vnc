@@ -59,6 +59,41 @@ The Tailscale sidecar provides network access and publishes ports 6080 and 8931.
 
 ## CI/CD
 
+### Infrastructure Quick Reference
+
+| Property | Value |
+|----------|-------|
+| **Port** | 8931 (MCP), 6080 (noVNC) |
+| **Network mode** | `service:tailscale` |
+| **MCP namespace** | `playwright` |
+| **MCP transport** | `http` (streamable-http) |
+| **Compose dir (VM)** | `/opt/playwright-mcp-vnc/` |
+
+#### Docker Labels
+
+| Label | Value |
+|-------|-------|
+| `mcp.enabled` | `true` |
+| `mcp.namespace` | `"playwright"` |
+| `mcp.transport` | `"http"` |
+| `mcp.url` | `"http://127.0.0.1:8931/mcp"` |
+| `mcp.description` | Browser automation via Playwright MCP |
+
+#### Secrets
+
+| Secret | Purpose |
+|--------|---------|
+| `TS_AUTHKEY` | Tailscale auth key (sidecar) |
+
+#### Sidecars
+
+| Sidecar | Status |
+|---------|--------|
+| Tailscale | Active |
+
+> For the full ecosystem map (all services, networking, data flows), see [INFRASTRUCTURE_MAP.md](vendor/handbook/INFRASTRUCTURE_MAP.md).
+> Port registry and MCP conventions: [REFERENCE_ARCHITECTURE.md §11.8](vendor/handbook/REFERENCE_ARCHITECTURE.md).
+
 Pushes to `main` trigger the GitHub Actions workflow which:
 1. Builds an ARM64 image via `toolbox/build-arm-image.yml`
 2. Pushes to `ghcr.io/matthewdart/playwright-mcp-vnc:latest`
