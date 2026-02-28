@@ -1,0 +1,22 @@
+services:
+  playwright-mcp:
+    build: .
+    container_name: playwright-mcp-vnc
+    ports:
+      # noVNC web interface — access via http://localhost:6080/vnc.html
+      - "6080:6080"
+      # Playwright MCP SSE endpoint
+      - "8931:8931"
+    environment:
+      - SCREEN_WIDTH=1280
+      - SCREEN_HEIGHT=720
+      - SCREEN_DEPTH=24
+    # Persist browser profile so cookies survive restarts
+    volumes:
+      - playwright-data:/home/pwuser/.config/chromium
+    # Required for Chromium sandboxing in Docker
+    ipc: host
+    restart: unless-stopped
+
+volumes:
+  playwright-data:
