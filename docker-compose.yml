@@ -43,8 +43,7 @@ services:
       mcp.namespace: "playwright"
       mcp.transport: "http"
       mcp.description: "Browser automation via Playwright MCP with headed Chromium. Supports interactive authentication via noVNC on port 6080."
-      # Playwright MCP uses /sse not /mcp
-      mcp.url: "http://127.0.0.1:8931/sse"
+      mcp.url: "http://127.0.0.1:8931/mcp"
     volumes:
       - playwright-data:/home/pwuser/.config/chromium
     deploy:
