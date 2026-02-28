@@ -1,22 +1,34 @@
 services:
-  playwright-mcp:
-    build: .
+  playwright-mcp-vnc:
+    image: ghcr.io/matthewdart/playwright-mcp-vnc:latest
     container_name: playwright-mcp-vnc
-    ports:
-      # noVNC web interface — access via http://localhost:6080/vnc.html
-      - "6080:6080"
-      # Playwright MCP SSE endpoint
-      - "8931:8931"
+    restart: unless-stopped
+    network_mode: host
+    ipc: host  # required for Chromium sandboxing
     environment:
       - SCREEN_WIDTH=1280
       - SCREEN_HEIGHT=720
       - SCREEN_DEPTH=24
-    # Persist browser profile so cookies survive restarts
+    labels:
+      mcp.enabled: "true"
+      mcp.namespace: "playwright"
+      mcp.transport: "http"
+      mcp.description: "Browser automation via Playwright MCP with headed Chromium. Supports interactive authentication via noVNC on port 6080."
+      # Explicit URL required: host networking means container name
+      # is not DNS-resolvable, and Playwright MCP uses /sse not /mcp
+      mcp.url: "http://localhost:8931/sse"
     volumes:
       - playwright-data:/home/pwuser/.config/chromium
-    # Required for Chromium sandboxing in Docker
-    ipc: host
-    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+          cpus: "2.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   playwright-data:
