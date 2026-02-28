@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     websockify \
     supervisor \
-    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Ensure the node user can write to required directories
@@ -29,6 +28,10 @@ ENV MCP_PORT=8931
 
 # Supervisor config to manage all processes
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Playwright wrapper (restores dumpable after setuid)
+COPY run-playwright.sh /app/run-playwright.sh
+RUN chmod +x /app/run-playwright.sh
 
 # Entrypoint
 COPY entrypoint.sh /entrypoint.sh

@@ -101,7 +101,7 @@ Pushes to `main` trigger the GitHub Actions workflow which:
 
 ## Security
 
-- All processes run as unprivileged `node` user (uid 1000). Chromium uses `--no-sandbox` (standard for containers) but a browser compromise only yields an unprivileged user, not root.
+- All child processes (Xvfb, fluxbox, x11vnc, websockify, Playwright/Chromium) run as unprivileged `node` user (uid 1000). Chromium uses `--no-sandbox` (standard for containers) but a browser compromise only yields an unprivileged user, not root.
 - VNC has no password set (`-nopw`). **Keep the noVNC port (6080) accessible only via Tailscale** — do not expose via Cloudflare tunnel.
 - The MCP port (8931) is restricted via `--allowed-hosts` to `localhost:8931` and `127.0.0.1:8931`.
 
