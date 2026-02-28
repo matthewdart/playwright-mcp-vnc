@@ -13,6 +13,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
 
+# Ensure the node user can write to required directories
+RUN mkdir -p /home/node/.config/chromium /var/log /var/run \
+    && chown -R node:node /home/node/.config/chromium
+
 # Environment
 ENV DISPLAY=:99
 ENV SCREEN_WIDTH=1280

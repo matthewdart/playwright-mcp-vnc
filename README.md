@@ -101,12 +101,13 @@ Pushes to `main` trigger the GitHub Actions workflow which:
 
 ## Security
 
+- All processes run as unprivileged `node` user (uid 1000). Chromium uses `--no-sandbox` (standard for containers) but a browser compromise only yields an unprivileged user, not root.
 - VNC has no password set (`-nopw`). **Keep the noVNC port (6080) accessible only via Tailscale** — do not expose via Cloudflare tunnel.
 - The MCP port (8931) is restricted via `--allowed-hosts` to `localhost:8931` and `127.0.0.1:8931`.
 
 ## Notes
 
-- Chromium profile data persists at `./data/chromium-profile/` (bind mount to `/home/pwuser/.config/chromium` inside the container). On the VM this maps to `/opt/playwright-mcp-vnc/data/chromium-profile/`. The `--user-data-dir` flag tells Playwright MCP to use this path, so cookies, localStorage, and sessions survive container restarts.
+- Chromium profile data persists at `./data/chromium-profile/` (bind mount to `/home/node/.config/chromium` inside the container). On the VM this maps to `/opt/playwright-mcp-vnc/data/chromium-profile/`. The `--user-data-dir` flag tells Playwright MCP to use this path, so cookies, localStorage, and sessions survive container restarts.
 - The base image is pinned to `mcr.microsoft.com/playwright/mcp:v0.0.68`. To upgrade, check available tags at `mcr.microsoft.com/v2/playwright/mcp/tags/list`.
 - The `cli.js` path inside the container (`/app/cli.js`) may change between image versions. Verify with:
   `docker run --rm mcr.microsoft.com/playwright/mcp:v0.0.68 find / -name "cli.js" 2>/dev/null`
