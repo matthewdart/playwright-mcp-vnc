@@ -1,15 +1,25 @@
 # Playwright MCP + noVNC
 
-Playwright MCP server with headed Chromium, accessible via noVNC for interactive authentication flows. Designed to integrate with [mcp-gateway](https://github.com/matthewdart/mcp-gateway) via Docker label-based service discovery.
+Playwright MCP server with headed Chromium, accessible via noVNC for interactive authentication flows. Uses `--shared-browser-context` so the browser persists across MCP sessions and remains visible in VNC. Designed to integrate with [mcp-gateway](https://github.com/matthewdart/mcp-gateway) via Docker label-based service discovery.
 
 ## Quick start
 
+The compose stack includes a Tailscale sidecar for network access. You need a Tailscale auth key:
+
 ```bash
-docker compose up -d --build
+# Create docker-compose.override.yml with your Tailscale auth key
+cat > docker-compose.override.yml <<EOF
+services:
+  tailscale:
+    environment:
+      - TS_AUTHKEY=tskey-auth-...
+EOF
+
+docker compose up -d
 ```
 
-- **noVNC**: http://localhost:6080/vnc.html
-- **MCP SSE**: http://localhost:8931/sse
+- **noVNC**: http://playwright-mcp-vnc:6080/vnc.html (via Tailscale)
+- **MCP endpoint**: http://127.0.0.1:8931/mcp (Streamable HTTP)
 
 ## Gateway integration
 
@@ -20,14 +30,12 @@ labels:
   mcp.enabled: "true"
   mcp.namespace: "playwright"
   mcp.transport: "http"
-  mcp.url: "http://localhost:8931/sse"
+  mcp.url: "http://127.0.0.1:8931/mcp"
 ```
 
 After the container starts, call `gateway_reload` to pick it up. Tools will appear under the `playwright` namespace.
 
-**Note:** The explicit `mcp.url` is required because:
-- The container uses `network_mode: host` (container name not DNS-resolvable)
-- Playwright MCP uses legacy SSE at `/sse`, not streamable HTTP at `/mcp`
+**Note:** The explicit `mcp.url` is required because the container uses `network_mode: service:tailscale` (shares the Tailscale sidecar's network namespace), so its container name is not DNS-resolvable by the gateway.
 
 ## Authentication workflow
 
@@ -35,23 +43,38 @@ After the container starts, call `gateway_reload` to pick it up. Tools will appe
 2. Open noVNC in your browser and enter credentials manually
 3. Hand control back to the agent — cookies persist for the session
 
+## Architecture
+
+The container runs five processes via supervisord:
+
+| Process | Role |
+|---|---|
+| **Xvfb** | Virtual framebuffer (`:99`, configurable resolution) |
+| **fluxbox** | Lightweight window manager |
+| **x11vnc** | VNC server on port 5900 |
+| **websockify** | noVNC web client on port 6080 |
+| **Playwright MCP** | MCP server on port 8931 with `--shared-browser-context` |
+
+The Tailscale sidecar provides network access and publishes ports 6080 and 8931.
+
 ## CI/CD
 
 Pushes to `main` trigger the GitHub Actions workflow which:
 1. Builds an ARM64 image via `toolbox/build-arm-image.yml`
 2. Pushes to `ghcr.io/matthewdart/playwright-mcp-vnc:latest`
-3. Deploys to the Oracle VM via `toolbox/deploy-stack.yml`
+3. Deploys to the Oracle VM via `toolbox/deploy-stack.yml` (injects `TS_AUTHKEY` from repo secrets)
 
 ## Security
 
 - VNC has no password set (`-nopw`). **Keep the noVNC port (6080) accessible only via Tailscale** — do not expose via Cloudflare tunnel.
-- The MCP SSE port (8931) is accessible to the gateway on localhost via host networking.
+- The MCP port (8931) is restricted via `--allowed-hosts` to `localhost:8931` and `127.0.0.1:8931`.
 
 ## Notes
 
-- The `playwright-data` volume persists the Chromium profile across restarts so cookies/sessions survive container recreation.
-- The `cli.js` path inside the container may vary between image versions. If the build fails, check with:
-  `docker run --rm -it mcr.microsoft.com/playwright/mcp find / -name "cli.js" 2>/dev/null`
+- Chromium profile data persists at `./data/chromium-profile/` (bind mount to `/home/pwuser/.config/chromium` inside the container). On the VM this maps to `/opt/playwright-mcp-vnc/data/chromium-profile/`. The `--user-data-dir` flag tells Playwright MCP to use this path, so cookies, localStorage, and sessions survive container restarts.
+- The base image is pinned to `mcr.microsoft.com/playwright/mcp:v0.0.68`. To upgrade, check available tags at `mcr.microsoft.com/v2/playwright/mcp/tags/list`.
+- The `cli.js` path inside the container (`/app/cli.js`) may change between image versions. Verify with:
+  `docker run --rm mcr.microsoft.com/playwright/mcp:v0.0.68 find / -name "cli.js" 2>/dev/null`
 
 ## Customisation
 

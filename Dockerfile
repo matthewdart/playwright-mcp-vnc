@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright/mcp
+FROM mcr.microsoft.com/playwright/mcp:v0.0.68
 
 USER root
 

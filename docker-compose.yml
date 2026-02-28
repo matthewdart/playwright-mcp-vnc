@@ -45,7 +45,7 @@ services:
       mcp.description: "Browser automation via Playwright MCP with headed Chromium. Supports interactive authentication via noVNC on port 6080."
       mcp.url: "http://127.0.0.1:8931/mcp"
     volumes:
-      - playwright-data:/home/pwuser/.config/chromium
+      - ./data/chromium-profile:/home/pwuser/.config/chromium
     deploy:
       resources:
         limits:
@@ -56,6 +56,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-volumes:
-  playwright-data:
