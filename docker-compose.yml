@@ -1,10 +1,39 @@
 services:
+  tailscale:
+    image: tailscale/tailscale:v1.80.3
+    container_name: playwright-mcp-vnc-tailscale
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_EXTRA_ARGS=--hostname=playwright-mcp-vnc
+    volumes:
+      - ./data/tailscale:/var/lib/tailscale
+    ports:
+      - "6080:6080"
+      - "8931:8931"
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
   playwright-mcp-vnc:
     image: ghcr.io/matthewdart/playwright-mcp-vnc:latest
     container_name: playwright-mcp-vnc
     restart: unless-stopped
-    network_mode: host
-    ipc: host  # required for Chromium sandboxing
+    network_mode: service:tailscale
+    depends_on:
+      - tailscale
+    shm_size: 2g
     environment:
       - SCREEN_WIDTH=1280
       - SCREEN_HEIGHT=720
@@ -14,9 +43,8 @@ services:
       mcp.namespace: "playwright"
       mcp.transport: "http"
       mcp.description: "Browser automation via Playwright MCP with headed Chromium. Supports interactive authentication via noVNC on port 6080."
-      # Explicit URL required: host networking means container name
-      # is not DNS-resolvable, and Playwright MCP uses /sse not /mcp
-      mcp.url: "http://localhost:8931/sse"
+      # Playwright MCP uses /sse not /mcp
+      mcp.url: "http://127.0.0.1:8931/sse"
     volumes:
       - playwright-data:/home/pwuser/.config/chromium
     deploy:
